@@ -48,6 +48,18 @@ export function MobileSelect({
   const hasError = !!error;
   const isDisabled = disabled || loading;
 
+  // Calculate grid configuration based on option count
+  const optionCount = options.length;
+  
+  // Determine if we should use 2 columns (when count not divisible by 3)
+  const useTwoColumns = optionCount % 3 !== 0;
+  
+  // For mobile: always use 2 columns
+  // For desktop: use 3 columns only when divisible by 3, otherwise 2 columns
+  const gridClass = useTwoColumns 
+    ? "grid grid-cols-2 gap-2" 
+    : "grid grid-cols-2 sm:grid-cols-3 gap-2";
+
   return (
     <>
       {/* Trigger Button - displays like a select */}
@@ -85,22 +97,32 @@ export function MobileSelect({
                 <span>Tidak ada opsi tersedia</span>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {options.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => handleSelect(option.value)}
-                    className={cn(
-                      'flex items-center justify-center px-3 py-3 text-sm rounded-lg transition-colors text-center min-h-[60px]',
-                      option.value === value
-                        ? 'bg-primary text-primary-foreground font-medium shadow-md'
-                        : 'bg-muted hover:bg-muted/80 border border-border'
-                    )}
-                  >
-                    <span className="line-clamp-2">{option.label}</span>
-                  </button>
-                ))}
+              <div className={gridClass}>
+                {options.map((option, index) => {
+                  // Check if this is the last item and there's a remainder of 1
+                  const isLastWithRemainderOne = 
+                    index === optionCount - 1 && 
+                    optionCount % 3 === 1 && 
+                    optionCount > 1;
+                  
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => handleSelect(option.value)}
+                      className={cn(
+                        'flex items-center justify-center gap-2 px-3 py-3 text-sm rounded-lg transition-colors text-center min-h-[60px]',
+                        option.value === value
+                          ? 'bg-primary text-primary-foreground font-medium shadow-md'
+                          : 'bg-muted hover:bg-muted/80 border border-border',
+                        // When remainder is 1 and this is the last item, span 2 columns and center
+                        isLastWithRemainderOne && 'col-span-2 max-w-[calc(50%-0.5rem)] mx-auto'
+                      )}
+                    >
+                      <span className="line-clamp-2">{option.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
