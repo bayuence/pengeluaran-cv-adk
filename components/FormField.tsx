@@ -5,13 +5,15 @@
 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronDown } from 'lucide-react';
+import { MobileSelect } from '@/components/ui/mobile-select';
+import { InlineSelect } from '@/components/ui/inline-select';
 
 interface FormFieldProps {
   id: string;
   label: string;
   name: string;
-  type?: 'text' | 'email' | 'date' | 'number' | 'currency' | 'select' | 'textarea' | 'file';
+  type?: 'text' | 'email' | 'date' | 'number' | 'currency' | 'select' | 'mobile-select' | 'inline-select' | 'textarea' | 'file';
   placeholder?: string;
   value?: string;
   error?: string;
@@ -51,10 +53,18 @@ export function FormField({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor={id} className="text-sm font-medium">
-        {label}
-        {required && <span className="text-destructive ml-1">*</span>}
-      </Label>
+      {type !== 'inline-select' && type !== 'mobile-select' && (
+        <Label htmlFor={id} className="text-sm font-medium">
+          {label}
+          {required && <span className="text-destructive ml-1">*</span>}
+        </Label>
+      )}
+      {type === 'inline-select' && (
+        <div className="text-sm font-medium mb-2">
+          {label}
+          {required && <span className="text-destructive ml-1">*</span>}
+        </div>
+      )}
 
       {type === 'textarea' ? (
         <textarea
@@ -88,6 +98,48 @@ export function FormField({
               <p className="text-xs text-muted-foreground mt-1">Tap untuk memilih gambar</p>
             </div>
           </label>
+        </div>
+      ) : type === 'inline-select' ? (
+        <InlineSelect
+          id={id}
+          label={label}
+          value={value}
+          onChange={(newValue) => {
+            const event = {
+              target: {
+                name,
+                value: newValue,
+              },
+            } as React.ChangeEvent<HTMLSelectElement>;
+            onChange?.(event);
+          }}
+          options={options}
+          placeholder={`Pilih ${label}`}
+          error={error}
+          disabled={disabled}
+          loading={loading}
+        />
+      ) : type === 'mobile-select' ? (
+        <div className="space-y-2">
+          <MobileSelect
+            id={id}
+            label={label}
+            value={value}
+            onChange={(newValue) => {
+              const event = {
+                target: {
+                  name,
+                  value: newValue,
+                },
+              } as React.ChangeEvent<HTMLSelectElement>;
+              onChange?.(event);
+            }}
+            options={options}
+            placeholder={`-- Pilih ${label} --`}
+            error={error}
+            disabled={disabled}
+            loading={loading}
+          />
         </div>
       ) : type === 'select' ? (
         <div className="relative">

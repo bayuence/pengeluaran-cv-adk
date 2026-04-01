@@ -167,7 +167,7 @@ export function ExpenseForm() {
                 id="proyek"
                 label="Proyek"
                 name="proyek"
-                type="select"
+                type="inline-select"
                 value={form.proyek}
                 error={errors.proyek || dropdownErrors.proyek}
                 onChange={handleChange}
@@ -182,7 +182,7 @@ export function ExpenseForm() {
                 id="kategori"
                 label="Kategori"
                 name="kategori"
-                type="select"
+                type="inline-select"
                 value={form.kategori}
                 error={errors.kategori || dropdownErrors.kategori}
                 onChange={handleChange}
@@ -210,7 +210,7 @@ export function ExpenseForm() {
                 id="metode"
                 label="Metode Pembayaran"
                 name="metode"
-                type="select"
+                type="inline-select"
                 value={form.metode}
                 error={errors.metode || dropdownErrors.metode}
                 onChange={handleChange}
@@ -225,7 +225,7 @@ export function ExpenseForm() {
                 id="pic"
                 label="PIC"
                 name="pic"
-                type="select"
+                type="inline-select"
                 value={form.pic}
                 error={errors.pic || dropdownErrors.pic}
                 onChange={handleChange}
@@ -259,19 +259,6 @@ export function ExpenseForm() {
                 error={errors.catatan}
                 onChange={handleChange}
                 required={false}
-              />
-
-              {/* Nama Pengguna */}
-              <FormField
-                id="user_input"
-                label="Nama Pengguna"
-                name="user_input"
-                type="text"
-                placeholder="Siapa yang input data ini?"
-                value={form.user_input}
-                error={errors.user_input}
-                onChange={handleChange}
-                required
               />
 
               {/* Upload Bukti */}
