@@ -4,6 +4,8 @@
  */
 
 import Image from 'next/image';
+import Link from 'next/link';
+import { History } from 'lucide-react';
 
 export function FormHeader() {
   return (
@@ -23,6 +25,13 @@ export function FormHeader() {
           Input Pengeluaran Proyek - Catat pengeluaran dengan cepat dan mudah. Data Anda aman tersimpan.
         </p>
       </div>
+      <Link
+        href="/history"
+        className="inline-flex items-center gap-2 text-sm text-primary hover:underline mt-2"
+      >
+        <History className="h-4 w-4" />
+        Lihat Riwayat Transaksi
+      </Link>
     </div>
   );
 }

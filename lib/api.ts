@@ -24,8 +24,23 @@ export interface ExpensePayload {
   bukti: string; // base64 or URL
 }
 
+export interface HistoryItem {
+  id: string;
+  tanggal: string;
+  proyek: string;
+  kategori: string;
+  deskripsi: string;
+  nominal: number;
+  metode: string;
+  pic: string;
+  catatan: string;
+  bukti: string;
+  timestamp: string;
+  user: string;
+}
+
 // Google Apps Script API endpoint (wajib dikonfigurasi di .env)
-const API_ENDPOINT = process.env.NEXT_PUBLIC_GAS_API_ENDPOINT || 'https://script.google.com/macros/s/AKfycbzQC9754A8-7tMKMnHTsDHsun2NSyTrOzrDUH-mpgNZJaR9z7UnWpU_OX5B_EQZwcLr/exec';
+const API_ENDPOINT = process.env.NEXT_PUBLIC_GAS_API_ENDPOINT || 'https://script.google.com/macros/s/AKfycbxIn6ZLdnKuuyU-52doUihWfWtCnrtblA5mVfQIG37K3pAyN1av5YVBs1blkQMJzKl0/exec';
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
 
@@ -40,6 +55,7 @@ async function retryFetch(
   try {
     const response = await fetch(url, {
       ...options,
+      redirect: 'follow', // Important for Google Apps Script redirects
       signal: AbortSignal.timeout(15000), // 15s timeout
     });
 
@@ -235,5 +251,59 @@ export function getLocalDraftCount(): number {
     return getDraftLocally().length;
   } catch {
     return 0;
+  }
+}
+
+/**
+ * Fetch transaction history from Google Apps Script
+ */
+export async function fetchHistory(
+  limit = 50,
+  offset = 0,
+  proyek?: string,
+  kategori?: string
+): Promise<ApiResponse<HistoryItem[]>> {
+  if (!API_ENDPOINT) {
+    return {
+      success: false,
+      error: 'API endpoint belum dikonfigurasi',
+    };
+  }
+
+  try {
+    const params = new URLSearchParams({
+      action: 'getHistory',
+      limit: String(limit),
+      offset: String(offset),
+    });
+    if (proyek) params.append('proyek', proyek);
+    if (kategori) params.append('kategori', kategori);
+
+    const response = await retryFetch(`${API_ENDPOINT}?${params.toString()}`, {
+      method: 'GET',
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log('[API] getHistory response:', data); // Debug log
+
+    if (data.success && Array.isArray(data.data)) {
+      return {
+        success: true,
+        data: data.data,
+      };
+    }
+
+    throw new Error(data.error || `Format respons tidak valid: ${JSON.stringify(data).slice(0, 200)}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Gagal mengambil riwayat transaksi';
+    console.error('[API] fetchHistory gagal:', message);
+    return {
+      success: false,
+      error: message,
+    };
   }
 }
