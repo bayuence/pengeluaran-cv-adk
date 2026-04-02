@@ -38,14 +38,16 @@ export function InlineSelect({
   // Calculate grid configuration based on option count
   const optionCount = options.length;
   
-  // Determine if we should use 2 columns (when count not divisible by 3)
-  const useTwoColumns = optionCount % 3 !== 0;
-  
-  // For mobile: always use 2 columns
-  // For desktop: use 3 columns only when divisible by 3, otherwise 2 columns
-  const gridClass = useTwoColumns 
-    ? "grid grid-cols-2 gap-2" 
-    : "grid grid-cols-2 sm:grid-cols-3 gap-2";
+  // Logic: 
+  // - Even count → 2 columns (2+2+2...)
+  // - Odd count → 3 columns (so last row has 2 or 3 items, not 1 alone)
+  //   - 3 items → 3 in one row
+  //   - 5 items → 3 + 2
+  //   - 7 items → 3 + 3 + 1 (unavoidable)
+  const useThreeColumns = optionCount % 2 === 1 && optionCount > 1;
+  const gridClass = useThreeColumns 
+    ? "grid grid-cols-3 gap-2" 
+    : "grid grid-cols-2 gap-2";
 
   return (
     <div className="space-y-2">
@@ -59,12 +61,13 @@ export function InlineSelect({
         </div>
       ) : (
         <div className={gridClass}>
-          {options.map((option, index) => {
-            // Check if this is the last item and there's a remainder of 1
+          {options.map((option) => {
+            // For 3-column grid: center the last item only when remainder is 1
+            // For 2-column grid: no centering needed (always even)
             const isLastWithRemainderOne = 
-              index === optionCount - 1 && 
-              optionCount % 3 === 1 && 
-              optionCount > 1;
+              useThreeColumns &&
+              option === options[optionCount - 1] && 
+              optionCount % 3 === 1;
             
             return (
               <button
@@ -78,8 +81,8 @@ export function InlineSelect({
                     ? 'bg-primary text-primary-foreground font-medium shadow-md ring-2 ring-primary ring-offset-1'
                     : 'bg-muted hover:bg-muted/80 border border-border text-foreground',
                   isDisabled && 'opacity-50 cursor-not-allowed',
-                  // When remainder is 1 and this is the last item, span 2 columns and center
-                  isLastWithRemainderOne && 'col-span-2 max-w-[calc(50%-0.5rem)] mx-auto'
+                  // When remainder is 1 and this is the last item in 3-col grid, center it
+                  isLastWithRemainderOne && 'col-start-2'
                 )}
               >
                 <span className="line-clamp-2">{option.label}</span>
