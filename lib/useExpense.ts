@@ -58,10 +58,7 @@ const validators: Partial<Record<keyof ExpensePayload, (value: string) => string
     if (value.trim().length < 5) return 'Deskripsi minimal 5 karakter';
     return '';
   },
-  user_input: (value) => {
-    if (!value?.trim()) return 'Nama pengguna harus diisi';
-    return '';
-  },
+  // user_input diisi otomatis (tidak perlu validasi manual)
 };
 
 export function useExpense() {
@@ -182,8 +179,8 @@ export function useExpense() {
     let isValid = true;
 
     (Object.keys(form) as Array<keyof ExpensePayload>).forEach((key) => {
-      // bukti dan catatan adalah opsional
-      if (key === 'bukti' || key === 'catatan') return;
+      // bukti, catatan, dan user_input adalah opsional / diisi otomatis
+      if (key === 'bukti' || key === 'catatan' || key === 'user_input') return;
 
       const error = validateField(key, form[key]);
       if (error) {
@@ -226,6 +223,8 @@ export function useExpense() {
           // Remove comma formatting before sending payload
           nominal: form.nominal.replace(/,/g, ''),
           bukti: buktiData,
+          // user_input diisi otomatis jika kosong
+          user_input: form.user_input || 'Web App',
         };
 
         const result = await submitExpenseData(payload);
