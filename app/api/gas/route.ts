@@ -3,10 +3,20 @@
  * Bypass CORS dengan route server-side
  */
 
-const GAS_ENDPOINT = process.env.NEXT_PUBLIC_GAS_API_ENDPOINT;
-
 export async function GET(request: Request) {
   try {
+    const GAS_ENDPOINT = process.env.NEXT_PUBLIC_GAS_API_ENDPOINT;
+
+    console.log('[API Proxy] GET request, GAS_ENDPOINT:', GAS_ENDPOINT ? 'configured' : 'NOT configured');
+
+    if (!GAS_ENDPOINT) {
+      console.error('[API Proxy] GAS_ENDPOINT tidak dikonfigurasi');
+      return Response.json(
+        { success: false, error: 'GAS endpoint tidak dikonfigurasi di environment' },
+        { status: 500 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
     const tipe = searchParams.get('tipe');
@@ -14,13 +24,6 @@ export async function GET(request: Request) {
     const offset = searchParams.get('offset');
     const proyek = searchParams.get('proyek');
     const kategori = searchParams.get('kategori');
-
-    if (!GAS_ENDPOINT) {
-      return Response.json(
-        { success: false, error: 'GAS endpoint tidak dikonfigurasi' },
-        { status: 500 }
-      );
-    }
 
     // Build GAS URL
     const gasUrl = new URL(GAS_ENDPOINT);
@@ -31,19 +34,24 @@ export async function GET(request: Request) {
     if (proyek) gasUrl.searchParams.append('proyek', proyek);
     if (kategori) gasUrl.searchParams.append('kategori', kategori);
 
+    console.log('[API Proxy] Fetching from:', gasUrl.toString().substring(0, 100) + '...');
+
     const response = await fetch(gasUrl.toString(), {
       method: 'GET',
       redirect: 'follow',
+      signal: AbortSignal.timeout(15000),
     });
 
     if (!response.ok) {
-      throw new Error(`GAS returned ${response.status}: ${response.statusText}`);
+      const text = await response.text();
+      console.error('[API Proxy] GAS error response:', response.status, text.substring(0, 200));
+      throw new Error(`GAS returned ${response.status}: ${text.substring(0, 100)}`);
     }
 
     const data = await response.json();
     return Response.json(data);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
+    const message = error instanceof Error ? error.message : String(error);
     console.error('[API Proxy] GET error:', message);
     return Response.json(
       { success: false, error: message },
@@ -54,9 +62,11 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const GAS_ENDPOINT = process.env.NEXT_PUBLIC_GAS_API_ENDPOINT;
+
     if (!GAS_ENDPOINT) {
       return Response.json(
-        { success: false, error: 'GAS endpoint tidak dikonfigurasi' },
+        { success: false, error: 'GAS endpoint tidak dikonfigurasi di environment' },
         { status: 500 }
       );
     }
@@ -74,6 +84,7 @@ export async function POST(request: Request) {
         timestamp: new Date().toISOString(),
       }),
       redirect: 'follow',
+      signal: AbortSignal.timeout(15000),
     });
 
     if (!response.ok) {
