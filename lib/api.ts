@@ -39,8 +39,9 @@ export interface HistoryItem {
   user: string;
 }
 
-// Google Apps Script API endpoint (wajib dikonfigurasi di .env)
-const API_ENDPOINT = process.env.NEXT_PUBLIC_GAS_API_ENDPOINT || 'https://script.google.com/macros/s/AKfycbxIn6ZLdnKuuyU-52doUihWfWtCnrtblA5mVfQIG37K3pAyN1av5YVBs1blkQMJzKl0/exec';
+// API Proxy endpoint (lokal, bypass CORS)
+// Proxy ini akan forward request ke Google Apps Script
+const API_ENDPOINT = '/api/gas';
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
 
