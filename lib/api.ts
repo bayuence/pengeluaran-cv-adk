@@ -15,6 +15,7 @@ export interface ExpensePayload {
   tanggal: string;
   proyek: string;
   kategori: string;
+  jenis: string; // 'Pemasukan' | 'Pengeluaran'
   nominal: string;
   metode: string;
   pic: string;
@@ -154,7 +155,7 @@ export async function submitExpenseData(
 ): Promise<ApiResponse<{ id: string; timestamp: string }>> {
   // Validate required fields
   const requiredFields: (keyof ExpensePayload)[] = [
-    'tanggal', 'proyek', 'kategori', 'nominal', 'metode', 'pic', 'deskripsi', 'user_input',
+    'tanggal', 'proyek', 'kategori', 'jenis', 'nominal', 'metode', 'pic', 'deskripsi', 'user_input',
   ];
   for (const field of requiredFields) {
     if (!payload[field]) {

@@ -13,6 +13,7 @@ const INITIAL_STATE: ExpensePayload = {
   tanggal: '',
   proyek: '',
   kategori: '',
+  jenis: 'Pengeluaran', // Default value
   nominal: '',
   metode: '',
   pic: '',
@@ -36,6 +37,10 @@ const validators: Partial<Record<keyof ExpensePayload, (value: string) => string
   },
   kategori: (value) => {
     if (!value?.trim()) return 'Kategori harus dipilih';
+    return '';
+  },
+  jenis: (value) => {
+    if (!value?.trim()) return 'Jenis harus dipilih';
     return '';
   },
   nominal: (value) => {
@@ -291,6 +296,7 @@ export function useExpense() {
     form,
     setForm,
     errors,
+    setErrors,
     isSubmitting,
     submitStatus,
     uploadedFile,
