@@ -2,10 +2,14 @@
  * Expense Form State Management Hook
  * Handles form state, validation, and submission for expense tracking
  * Data submission goes to Google Sheets via Google Apps Script
+ * v2 – mendukung multi-upload foto bukti (maks 5 foto)
  */
 
 import { useState, useCallback } from 'react';
 import { submitExpenseData, saveDraftLocally, ExpensePayload } from './api';
+
+/** Jumlah maksimum foto bukti per transaksi */
+export const MAX_BUKTI_FILES = 5;
 
 export type FormErrors = Partial<Record<keyof ExpensePayload, string>>;
 
@@ -70,7 +74,11 @@ export function useExpense() {
   const [form, setForm] = useState<ExpensePayload>(INITIAL_STATE);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+
+  // Multi-file upload state
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [filePreviews, setFilePreviews] = useState<string[]>([]); // base64 untuk preview thumbnail
+
   const [submitStatus, setSubmitStatus] = useState<{
     type: 'success' | 'error' | null;
     message: string;
@@ -164,16 +172,60 @@ export function useExpense() {
   );
 
   /**
-   * Handle file upload
+   * Generate thumbnail preview (lebih kecil dari kompresi submit, hanya untuk tampilan)
    */
-  const handleFileChange = useCallback(
-    (file: File | null) => {
-      setUploadedFile(file);
-      if (errors.bukti) {
-        setErrors((prev) => ({ ...prev, bukti: '' }));
-      }
+  const generatePreview = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (e) => {
+        const img = new Image();
+        img.src = e.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_PREVIEW = 200; // thumbnail kecil
+          let w = img.width;
+          let h = img.height;
+          if (w > h) {
+            if (w > MAX_PREVIEW) { h = h * MAX_PREVIEW / w; w = MAX_PREVIEW; }
+          } else {
+            if (h > MAX_PREVIEW) { w = w * MAX_PREVIEW / h; h = MAX_PREVIEW; }
+          }
+          canvas.width = w;
+          canvas.height = h;
+          canvas.getContext('2d')?.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.6));
+        };
+        img.onerror = () => resolve(e.target?.result as string);
+      };
+      reader.onerror = () => resolve('');
+    });
+  };
+
+  /**
+   * Tambahkan foto-foto baru ke daftar upload
+   */
+  const handleAddFiles = useCallback(
+    async (newFiles: File[]) => {
+      const combined = [...uploadedFiles, ...newFiles].slice(0, MAX_BUKTI_FILES);
+      setUploadedFiles(combined);
+      // Generate preview untuk file baru saja
+      const newPreviews = await Promise.all(newFiles.map(generatePreview));
+      setFilePreviews((prev) => [...prev, ...newPreviews].slice(0, MAX_BUKTI_FILES));
+      if (errors.bukti) setErrors((prev) => ({ ...prev, bukti: '' }));
     },
-    [errors]
+    [uploadedFiles, errors]
+  );
+
+  /**
+   * Hapus foto dari daftar berdasarkan index
+   */
+  const handleRemoveFile = useCallback(
+    (index: number) => {
+      setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
+      setFilePreviews((prev) => prev.filter((_, i) => i !== index));
+    },
+    []
   );
 
   /**
@@ -217,10 +269,11 @@ export function useExpense() {
       setSubmitStatus({ type: null, message: '' });
 
       try {
-        // Convert file to base64 if uploaded
+        // Kompres semua file lalu gabung dengan separator '||'
         let buktiData = '';
-        if (uploadedFile) {
-          buktiData = await fileToBase64(uploadedFile);
+        if (uploadedFiles.length > 0) {
+          const compressed = await Promise.all(uploadedFiles.map(fileToBase64));
+          buktiData = compressed.join('||');
         }
 
         const payload: ExpensePayload = {
@@ -240,7 +293,8 @@ export function useExpense() {
             message: result.message || 'Transaksi berhasil disimpan ke spreadsheet!',
           });
           setForm(INITIAL_STATE);
-          setUploadedFile(null);
+          setUploadedFiles([]);
+          setFilePreviews([]);
 
           // Clear status after 5 seconds
           setTimeout(() => {
@@ -279,7 +333,7 @@ export function useExpense() {
         setIsSubmitting(false);
       }
     },
-    [form, validateAll, uploadedFile]
+    [form, validateAll, uploadedFiles]
   );
 
   /**
@@ -287,7 +341,8 @@ export function useExpense() {
    */
   const resetForm = useCallback(() => {
     setForm(INITIAL_STATE);
-    setUploadedFile(null);
+    setUploadedFiles([]);
+    setFilePreviews([]);
     setErrors({});
     setSubmitStatus({ type: null, message: '' });
   }, []);
@@ -299,9 +354,11 @@ export function useExpense() {
     setErrors,
     isSubmitting,
     submitStatus,
-    uploadedFile,
+    uploadedFiles,
+    filePreviews,
     handleChange,
-    handleFileChange,
+    handleAddFiles,
+    handleRemoveFile,
     handleSubmit,
     validateField,
     resetForm,

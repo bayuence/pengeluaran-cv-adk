@@ -4,13 +4,15 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { fetchHistory, HistoryItem } from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Image as ImageIcon, X, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Loader2, Image as ImageIcon, Images, X, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function HistoryPage() {
   const [transactions, setTransactions] = useState<HistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  // Modal: array URL foto + index aktif
+  const [modalImages, setModalImages] = useState<string[]>([]);
+  const [modalIndex, setModalIndex] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -70,6 +72,20 @@ export default function HistoryPage() {
     return url && url.startsWith('http') && !url.includes('Upload') && !url.includes('Gagal');
   };
 
+  /**
+   * Parse field bukti: bisa single URL atau multi URL dipisahkan '||'
+   * Kembalikan array URL yang valid saja
+   */
+  const parseBuktiUrls = (bukti: string): string[] => {
+    if (!bukti) return [];
+    // Support format baru (\n) dan format lama (||) sekaligus
+    const separator = bukti.includes('||') ? '||' : '\n';
+    return bukti
+      .split(separator)
+      .map((u) => u.trim())
+      .filter(isValidImageUrl);
+  };
+
   // Convert Google Drive URL to embeddable preview URL
   const getPreviewUrl = (url: string) => {
     if (!url) return '';
@@ -82,9 +98,22 @@ export default function HistoryPage() {
     return url;
   };
 
-  // Open image in new tab
-  const openImageInNewTab = (url: string) => {
-    window.open(url, '_blank');
+  // Buka modal dengan daftar foto + mulai dari index tertentu
+  const openModal = (urls: string[], startIndex = 0) => {
+    setModalImages(urls.map(getPreviewUrl));
+    setModalIndex(startIndex);
+  };
+
+  const closeModal = () => setModalImages([]);
+
+  const prevPhoto = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setModalIndex((i) => (i > 0 ? i - 1 : modalImages.length - 1));
+  };
+
+  const nextPhoto = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setModalIndex((i) => (i < modalImages.length - 1 ? i + 1 : 0));
   };
 
   return (
@@ -162,16 +191,52 @@ export default function HistoryPage() {
                   )}
                 </div>
 
-                {/* Bukti/Proof Image */}
-                {isValidImageUrl(item.bukti) && (
-                  <button
-                    onClick={() => setSelectedImage(getPreviewUrl(item.bukti))}
-                    className="flex items-center gap-2 text-xs text-primary hover:underline"
-                  >
-                    <ImageIcon className="h-4 w-4" />
-                    Lihat Bukti
-                  </button>
-                )}
+                {/* Bukti/Proof Image — support multiple */}
+                {(() => {
+                  const buktiUrls = parseBuktiUrls(item.bukti);
+                  if (buktiUrls.length === 0) return null;
+
+                  if (buktiUrls.length === 1) {
+                    // Single photo → tampil seperti sebelumnya
+                    return (
+                      <button
+                        onClick={() => openModal(buktiUrls, 0)}
+                        className="flex items-center gap-2 text-xs text-primary hover:underline"
+                      >
+                        <ImageIcon className="h-4 w-4" />
+                        Lihat Bukti
+                      </button>
+                    );
+                  }
+
+                  // Multiple photos → thumbnail strip
+                  return (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1.5 text-xs text-primary font-medium">
+                        <Images className="h-4 w-4" />
+                        {buktiUrls.length} Foto Bukti
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {buktiUrls.map((url, photoIdx) => (
+                          <button
+                            key={photoIdx}
+                            onClick={() => openModal(buktiUrls, photoIdx)}
+                            className="relative w-14 h-14 rounded-lg overflow-hidden border border-primary/30 bg-muted hover:ring-2 hover:ring-primary/50 transition-all"
+                            title={`Foto ${photoIdx + 1}`}
+                          >
+                            {/* Placeholder karena kita tidak bisa embed iframe di thumbnail */}
+                            <div className="w-full h-full flex items-center justify-center bg-primary/5">
+                              <ImageIcon className="h-5 w-5 text-primary/50" />
+                            </div>
+                            <span className="absolute bottom-0 right-0 bg-primary text-white text-[9px] px-1 py-0.5 rounded-tl-md leading-none">
+                              {photoIdx + 1}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Footer */}
                 <div className="flex items-center justify-between pt-2 border-t text-xs text-muted-foreground">
@@ -208,33 +273,65 @@ export default function HistoryPage() {
         )}
       </div>
 
-      {/* Image Modal - using iframe for Google Drive */}
-      {selectedImage && (
+      {/* Image Modal - using iframe for Google Drive, support navigasi multi-foto */}
+      {modalImages.length > 0 && (
         <div
           className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4"
-          onClick={() => setSelectedImage(null)}
+          onClick={closeModal}
         >
+          {/* Close button */}
           <button
-            onClick={() => setSelectedImage(null)}
+            onClick={closeModal}
             className="absolute top-4 right-4 text-white p-2 hover:bg-white/20 rounded-full z-10"
           >
             <X className="h-6 w-6" />
           </button>
+
+          {/* Counter */}
+          {modalImages.length > 1 && (
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white text-sm bg-black/40 px-3 py-1 rounded-full">
+              {modalIndex + 1} / {modalImages.length}
+            </div>
+          )}
+
+          {/* Iframe viewer */}
           <iframe
-            src={selectedImage}
-            className="w-full max-w-3xl h-[80vh] rounded-lg bg-white"
+            src={modalImages[modalIndex]}
+            className="w-full max-w-3xl h-[75vh] rounded-lg bg-white"
             onClick={(e) => e.stopPropagation()}
             allow="autoplay"
           />
-          <a
-            href={selectedImage.replace('/preview', '/view')}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-3 text-white text-sm hover:underline"
-            onClick={(e) => e.stopPropagation()}
-          >
-            Buka di Google Drive →
-          </a>
+
+          {/* Navigation arrows (jika lebih dari 1 foto) */}
+          {modalImages.length > 1 && (
+            <>
+              <button
+                onClick={prevPhoto}
+                className="absolute left-2 top-1/2 -translate-y-1/2 text-white p-2 bg-black/50 hover:bg-black/70 rounded-full"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+              <button
+                onClick={nextPhoto}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-white p-2 bg-black/50 hover:bg-black/70 rounded-full"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+            </>
+          )}
+
+          {/* Link buka di Drive */}
+          <div className="mt-3 flex items-center gap-4">
+            <a
+              href={modalImages[modalIndex].replace('/preview', '/view')}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white text-sm hover:underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              Buka di Google Drive →
+            </a>
+          </div>
         </div>
       )}
     </main>

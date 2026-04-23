@@ -11,6 +11,7 @@ import { useState, useEffect } from 'react';
 import { FormHeader } from './FormHeader';
 import { FormField } from './FormField';
 import { StatusMessage } from './StatusMessage';
+import { MultiBuktiUploader } from './MultiBuktiUploader';
 import { Button } from '@/components/ui/button';
 import { useExpense } from '@/lib/useExpense';
 import { fetchDropdownOptions } from '@/lib/api';
@@ -41,9 +42,11 @@ export function ExpenseForm() {
     errors,
     isSubmitting,
     submitStatus,
-    uploadedFile,
+    uploadedFiles,
+    filePreviews,
     handleChange,
-    handleFileChange,
+    handleAddFiles,
+    handleRemoveFile,
     handleSubmit,
     resetForm,
     setErrors,
@@ -113,7 +116,6 @@ export function ExpenseForm() {
   }, []);
 
   const hasDropdownErrors = Object.keys(dropdownErrors).length > 0;
-  const fileName = uploadedFile ? uploadedFile.name : '';
 
   return (
     <div className="w-full bg-background/70 flex flex-col rounded-[2rem] border border-white/60 shadow-[0_25px_80px_-45px_rgba(28,25,23,0.35)] backdrop-blur-sm">
@@ -303,22 +305,14 @@ export function ExpenseForm() {
                 required={false}
               />
 
-              {/* Upload Bukti */}
-              <FormField
-                id="bukti"
-                label="Upload Bukti"
-                name="bukti"
-                type="file"
-                onFileChange={handleFileChange}
-                required={false}
-                accept="image/*"
-              >
-                {fileName && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    File dipilih: {fileName}
-                  </p>
-                )}
-              </FormField>
+              {/* Upload Bukti - Multi Foto */}
+              <MultiBuktiUploader
+                files={uploadedFiles}
+                previews={filePreviews}
+                onAdd={handleAddFiles}
+                onRemove={handleRemoveFile}
+                error={errors.bukti}
+              />
             </div>
 
             {/* Submit Button */}
