@@ -79,11 +79,12 @@ export default function HistoryPage() {
         return parsed.filter((item): item is string => typeof item === 'string');
       }
     } catch {
-      // fallback ke format string biasa
+      // Fallback untuk data lama: satu URL per baris (line-separated string)
     }
 
+    // Fallback parser untuk format string lama/non-JSON
     return rawBukti
-      .split(/\r?\n|[,;]+/)
+      .split(/\r?\n/)
       .map((item) => item.trim())
       .filter(Boolean);
   };

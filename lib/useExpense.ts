@@ -8,6 +8,11 @@ import { useState, useCallback } from 'react';
 import { submitExpenseData, saveDraftLocally, ExpensePayload } from './api';
 
 export type FormErrors = Partial<Record<keyof ExpensePayload, string>>;
+export const UPLOAD_CONFIG = {
+  MAX_FILES: 5,
+  MAX_SIZE_MB: 5,
+  MAX_SIZE_BYTES: 5 * 1024 * 1024,
+} as const;
 
 const INITIAL_STATE: ExpensePayload = {
   tanggal: '',
@@ -168,12 +173,9 @@ export function useExpense() {
    */
   const handleFileChange = useCallback(
     (files: File[]) => {
-      const MAX_FILES = 5;
-      const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB per file
-
-      if (files.length > MAX_FILES) {
+      if (files.length > UPLOAD_CONFIG.MAX_FILES) {
         setUploadedFiles([]);
-        setErrors((prev) => ({ ...prev, bukti: `Maksimal ${MAX_FILES} foto per transaksi` }));
+        setErrors((prev) => ({ ...prev, bukti: `Maksimal ${UPLOAD_CONFIG.MAX_FILES} foto per transaksi` }));
         return;
       }
 
@@ -184,10 +186,10 @@ export function useExpense() {
         return;
       }
 
-      const hasOversizedFile = files.some((file) => file.size > MAX_FILE_SIZE);
+      const hasOversizedFile = files.some((file) => file.size > UPLOAD_CONFIG.MAX_SIZE_BYTES);
       if (hasOversizedFile) {
         setUploadedFiles([]);
-        setErrors((prev) => ({ ...prev, bukti: 'Ukuran tiap foto maksimal 5MB' }));
+        setErrors((prev) => ({ ...prev, bukti: `Ukuran tiap foto maksimal ${UPLOAD_CONFIG.MAX_SIZE_MB}MB` }));
         return;
       }
 
@@ -244,7 +246,7 @@ export function useExpense() {
         let buktiData = '';
         if (uploadedFiles.length > 0) {
           const buktiList = await Promise.all(uploadedFiles.map((file) => fileToBase64(file)));
-          buktiData = buktiList.length === 1 ? buktiList[0] : JSON.stringify(buktiList);
+          buktiData = JSON.stringify(buktiList);
         }
 
         const payload: ExpensePayload = {

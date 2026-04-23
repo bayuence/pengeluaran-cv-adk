@@ -12,7 +12,7 @@ import { FormHeader } from './FormHeader';
 import { FormField } from './FormField';
 import { StatusMessage } from './StatusMessage';
 import { Button } from '@/components/ui/button';
-import { useExpense } from '@/lib/useExpense';
+import { UPLOAD_CONFIG, useExpense } from '@/lib/useExpense';
 import { fetchDropdownOptions } from '@/lib/api';
 import { Loader2, AlertTriangle } from 'lucide-react';
 
@@ -317,9 +317,9 @@ export function ExpenseForm() {
                 {selectedFileCount > 0 && (
                   <div className="text-xs text-muted-foreground mt-2 space-y-1">
                     <p>{selectedFileCount} foto dipilih:</p>
-                    <ul className="list-disc list-inside">
-                      {uploadedFiles.map((file) => (
-                        <li key={`${file.name}-${file.lastModified}`}>{file.name}</li>
+                      <ul className="list-disc list-inside">
+                      {uploadedFiles.map((file, index) => (
+                        <li key={index}>{file.name}</li>
                       ))}
                     </ul>
                   </div>
@@ -363,7 +363,7 @@ export function ExpenseForm() {
 
             {/* Helper Text */}
             <p className="text-xs text-muted-foreground text-center pt-2">
-              Semua field bertanda * wajib diisi. Upload bukti maksimal 5 foto (maks. 5MB/foto).
+              Semua field bertanda * wajib diisi. Upload bukti maksimal {UPLOAD_CONFIG.MAX_FILES} foto (maks. {UPLOAD_CONFIG.MAX_SIZE_MB}MB/foto).
             </p>
           </form>
         </div>

@@ -98,7 +98,7 @@ Content-Type: application/json
   "deskripsi": "Pembelian material konstruksi",
   "catatan": "Terkirim lengkap",
   "user_input": "Admin",
-  "bukti": "base64-image-string / JSON array base64-image-string",
+  "bukti": "[\"base64-image-string-1\", \"base64-image-string-2\"]",
   "timestamp": "2026-03-14T10:30:00Z"
 }
 ```
