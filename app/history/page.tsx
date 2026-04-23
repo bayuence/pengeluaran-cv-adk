@@ -70,6 +70,24 @@ export default function HistoryPage() {
     return url && url.startsWith('http') && !url.includes('Upload') && !url.includes('Gagal');
   };
 
+  const parseBuktiList = (rawBukti: string): string[] => {
+    if (!rawBukti) return [];
+
+    try {
+      const parsed = JSON.parse(rawBukti);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((item): item is string => typeof item === 'string');
+      }
+    } catch {
+      // fallback ke format string biasa
+    }
+
+    return rawBukti
+      .split(/\r?\n|[,;]+/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  };
+
   // Convert Google Drive URL to embeddable preview URL
   const getPreviewUrl = (url: string) => {
     if (!url) return '';
@@ -131,11 +149,13 @@ export default function HistoryPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {transactions.map((item) => (
-              <div
-                key={item.id}
-                className="bg-card border rounded-xl p-4 space-y-3"
-              >
+            {transactions.map((item) => {
+              const buktiList = parseBuktiList(item.bukti).filter(isValidImageUrl);
+              return (
+                <div
+                  key={item.id}
+                  className="bg-card border rounded-xl p-4 space-y-3"
+                >
                 {/* Header: Date & Amount */}
                 <div className="flex items-start justify-between">
                   <div>
@@ -163,14 +183,19 @@ export default function HistoryPage() {
                 </div>
 
                 {/* Bukti/Proof Image */}
-                {isValidImageUrl(item.bukti) && (
-                  <button
-                    onClick={() => setSelectedImage(getPreviewUrl(item.bukti))}
-                    className="flex items-center gap-2 text-xs text-primary hover:underline"
-                  >
-                    <ImageIcon className="h-4 w-4" />
-                    Lihat Bukti
-                  </button>
+                {buktiList.length > 0 && (
+                  <div className="space-y-1">
+                    {buktiList.map((buktiUrl, index) => (
+                      <button
+                        key={`${item.id}-bukti-${index}`}
+                        onClick={() => setSelectedImage(getPreviewUrl(buktiUrl))}
+                        className="flex items-center gap-2 text-xs text-primary hover:underline"
+                      >
+                        <ImageIcon className="h-4 w-4" />
+                        {buktiList.length === 1 ? 'Lihat Bukti' : `Lihat Bukti ${index + 1}`}
+                      </button>
+                    ))}
+                  </div>
                 )}
 
                 {/* Footer */}
@@ -178,8 +203,9 @@ export default function HistoryPage() {
                   <span>ID: {item.id}</span>
                   <span>oleh {item.user || 'Sistem'}</span>
                 </div>
-              </div>
-            ))}
+                </div>
+              );
+            })}
 
             {/* Load More */}
             {hasMore && (

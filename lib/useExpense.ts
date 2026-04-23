@@ -70,7 +70,7 @@ export function useExpense() {
   const [form, setForm] = useState<ExpensePayload>(INITIAL_STATE);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [submitStatus, setSubmitStatus] = useState<{
     type: 'success' | 'error' | null;
     message: string;
@@ -167,8 +167,31 @@ export function useExpense() {
    * Handle file upload
    */
   const handleFileChange = useCallback(
-    (file: File | null) => {
-      setUploadedFile(file);
+    (files: File[]) => {
+      const MAX_FILES = 5;
+      const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB per file
+
+      if (files.length > MAX_FILES) {
+        setUploadedFiles([]);
+        setErrors((prev) => ({ ...prev, bukti: `Maksimal ${MAX_FILES} foto per transaksi` }));
+        return;
+      }
+
+      const hasNonImage = files.some((file) => !file.type.startsWith('image/'));
+      if (hasNonImage) {
+        setUploadedFiles([]);
+        setErrors((prev) => ({ ...prev, bukti: 'Hanya file gambar yang diperbolehkan' }));
+        return;
+      }
+
+      const hasOversizedFile = files.some((file) => file.size > MAX_FILE_SIZE);
+      if (hasOversizedFile) {
+        setUploadedFiles([]);
+        setErrors((prev) => ({ ...prev, bukti: 'Ukuran tiap foto maksimal 5MB' }));
+        return;
+      }
+
+      setUploadedFiles(files);
       if (errors.bukti) {
         setErrors((prev) => ({ ...prev, bukti: '' }));
       }
@@ -219,8 +242,9 @@ export function useExpense() {
       try {
         // Convert file to base64 if uploaded
         let buktiData = '';
-        if (uploadedFile) {
-          buktiData = await fileToBase64(uploadedFile);
+        if (uploadedFiles.length > 0) {
+          const buktiList = await Promise.all(uploadedFiles.map((file) => fileToBase64(file)));
+          buktiData = buktiList.length === 1 ? buktiList[0] : JSON.stringify(buktiList);
         }
 
         const payload: ExpensePayload = {
@@ -240,7 +264,7 @@ export function useExpense() {
             message: result.message || 'Transaksi berhasil disimpan ke spreadsheet!',
           });
           setForm(INITIAL_STATE);
-          setUploadedFile(null);
+          setUploadedFiles([]);
 
           // Clear status after 5 seconds
           setTimeout(() => {
@@ -279,7 +303,7 @@ export function useExpense() {
         setIsSubmitting(false);
       }
     },
-    [form, validateAll, uploadedFile]
+    [form, validateAll, uploadedFiles]
   );
 
   /**
@@ -287,7 +311,7 @@ export function useExpense() {
    */
   const resetForm = useCallback(() => {
     setForm(INITIAL_STATE);
-    setUploadedFile(null);
+    setUploadedFiles([]);
     setErrors({});
     setSubmitStatus({ type: null, message: '' });
   }, []);
@@ -299,7 +323,7 @@ export function useExpense() {
     setErrors,
     isSubmitting,
     submitStatus,
-    uploadedFile,
+    uploadedFiles,
     handleChange,
     handleFileChange,
     handleSubmit,
