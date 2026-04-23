@@ -12,7 +12,7 @@ import { FormHeader } from './FormHeader';
 import { FormField } from './FormField';
 import { StatusMessage } from './StatusMessage';
 import { Button } from '@/components/ui/button';
-import { useExpense } from '@/lib/useExpense';
+import { UPLOAD_CONFIG, useExpense } from '@/lib/useExpense';
 import { fetchDropdownOptions } from '@/lib/api';
 import { Loader2, AlertTriangle } from 'lucide-react';
 
@@ -41,7 +41,7 @@ export function ExpenseForm() {
     errors,
     isSubmitting,
     submitStatus,
-    uploadedFile,
+    uploadedFiles,
     handleChange,
     handleFileChange,
     handleSubmit,
@@ -113,7 +113,7 @@ export function ExpenseForm() {
   }, []);
 
   const hasDropdownErrors = Object.keys(dropdownErrors).length > 0;
-  const fileName = uploadedFile ? uploadedFile.name : '';
+  const selectedFileCount = uploadedFiles.length;
 
   return (
     <div className="w-full bg-background/70 flex flex-col rounded-[2rem] border border-white/60 shadow-[0_25px_80px_-45px_rgba(28,25,23,0.35)] backdrop-blur-sm">
@@ -312,11 +312,17 @@ export function ExpenseForm() {
                 onFileChange={handleFileChange}
                 required={false}
                 accept="image/*"
+                multiple
               >
-                {fileName && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    File dipilih: {fileName}
-                  </p>
+                {selectedFileCount > 0 && (
+                  <div className="text-xs text-muted-foreground mt-2 space-y-1">
+                    <p>{selectedFileCount} foto dipilih:</p>
+                      <ul className="list-disc list-inside">
+                      {uploadedFiles.map((file, index) => (
+                        <li key={index}>{file.name}</li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </FormField>
             </div>
@@ -357,7 +363,7 @@ export function ExpenseForm() {
 
             {/* Helper Text */}
             <p className="text-xs text-muted-foreground text-center pt-2">
-              Semua field bertanda * wajib diisi. Data disimpan langsung ke Google Sheets.
+              Semua field bertanda * wajib diisi. Upload bukti maksimal {UPLOAD_CONFIG.MAX_FILES} foto (maks. {UPLOAD_CONFIG.MAX_SIZE_MB}MB/foto).
             </p>
           </form>
         </div>

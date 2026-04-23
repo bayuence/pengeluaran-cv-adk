@@ -8,7 +8,7 @@ Modern Progressive Web App untuk pencatatan pengeluaran proyek konstruksi. Aplik
 - **Offline Support**: Tetap berfungsi saat offline dengan Service Worker
 - **Real-time Validation**: Validasi form yang responsif dan user-friendly
 - **Dropdown Dynamic**: Menu dropdown yang diisi dari API Google Apps Script
-- **File Upload**: Support upload bukti transaksi dalam format image
+- **File Upload**: Support upload beberapa bukti transaksi dalam format image
 - **Draft Recovery**: Menyimpan draft otomatis saat offline
 - **Add to Home Screen**: PWA dapat dipasang di home screen Android/iOS
 - **Clean & Fast**: Loading <3 detik, Lighthouse PWA score 90+
@@ -59,7 +59,7 @@ src/
 | Deskripsi | Text | Ya | Min 5 karakter |
 | Catatan | Textarea | Tidak | Optional notes |
 | User | Text | Ya | Nama yang input data |
-| Upload Bukti | File | Tidak | Gambar untuk dokumentasi |
+| Upload Bukti | Multi File | Tidak | Maksimal 5 foto (maks. 5MB/foto) |
 
 ## Google Apps Script API Integration
 
@@ -98,7 +98,7 @@ Content-Type: application/json
   "deskripsi": "Pembelian material konstruksi",
   "catatan": "Terkirim lengkap",
   "user_input": "Admin",
-  "bukti": "base64-image-string",
+  "bukti": "[\"base64-image-string-1\", \"base64-image-string-2\"]",
   "timestamp": "2026-03-14T10:30:00Z"
 }
 ```
@@ -170,7 +170,7 @@ Semua field memiliki validasi real-time:
 - deskripsi: Required, min 5 characters
 - user_input: Required
 - catatan: Optional
-- bukti: Optional
+- bukti: Optional, maksimal 5 gambar (maks. 5MB per gambar)
 ```
 
 ## Error Handling
@@ -187,6 +187,8 @@ Semua field memiliki validasi real-time:
 
 ### File Upload
 - Support image files only
+- Support multi-image upload (maksimal 5 foto)
+- Validasi ukuran maksimal 5MB per foto
 - Automatic compression sebelum upload
 - Fallback jika file upload gagal
 
