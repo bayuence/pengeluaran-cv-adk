@@ -88,6 +88,8 @@ export default function HistoryPage() {
       }
     }
 
+    // Backward compatibility: data bukti lama bisa dipisah dengan koma/newline,
+    // sementara format baru dari aplikasi ini memakai separator "||".
     return cleaned
       .split(/\|\||,|\n/)
       .map((url) => url.trim())
@@ -203,7 +205,7 @@ export default function HistoryPage() {
                           className="flex items-center gap-2 text-xs text-primary hover:underline"
                         >
                           <ImageIcon className="h-4 w-4" />
-                          Lihat Bukti {proofUrls.length > 1 ? index + 1 : ''}
+                          {proofUrls.length > 1 ? `Lihat Bukti ${index + 1}` : 'Lihat Bukti'}
                         </button>
                       ))}
                     </div>

@@ -220,7 +220,15 @@ export function useExpense() {
         // Convert file to base64 if uploaded
         let buktiData = '';
         if (uploadedFiles.length > 0) {
-          const buktiList = await Promise.all(uploadedFiles.map((file) => fileToBase64(file)));
+          const buktiList = await Promise.all(
+            uploadedFiles.map(async (file) => {
+              try {
+                return await fileToBase64(file);
+              } catch {
+                throw new Error(`Gagal memproses file: ${file.name}`);
+              }
+            })
+          );
           buktiData = buktiList.join('||');
         }
 
@@ -273,7 +281,7 @@ export function useExpense() {
         } else {
           setSubmitStatus({
             type: 'error',
-            message: 'Terjadi kesalahan. Silakan coba lagi.',
+            message: error instanceof Error ? error.message : 'Terjadi kesalahan. Silakan coba lagi.',
           });
         }
       } finally {

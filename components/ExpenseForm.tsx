@@ -35,6 +35,8 @@ interface DropdownError {
   pic?: string;
 }
 
+const MAX_DISPLAYED_FILES = 3;
+
 export function ExpenseForm() {
   const {
     form,
@@ -114,6 +116,9 @@ export function ExpenseForm() {
 
   const hasDropdownErrors = Object.keys(dropdownErrors).length > 0;
   const fileCount = uploadedFiles.length;
+  const selectedFileLabel = fileCount <= MAX_DISPLAYED_FILES
+    ? uploadedFiles.map((file) => file.name).join(', ')
+    : `${uploadedFiles.slice(0, MAX_DISPLAYED_FILES).map((file) => file.name).join(', ')} dan ${fileCount - MAX_DISPLAYED_FILES} file lainnya`;
 
   return (
     <div className="w-full bg-background/70 flex flex-col rounded-[2rem] border border-white/60 shadow-[0_25px_80px_-45px_rgba(28,25,23,0.35)] backdrop-blur-sm">
@@ -316,7 +321,7 @@ export function ExpenseForm() {
               >
                 {fileCount > 0 && (
                   <p className="text-xs text-muted-foreground mt-2">
-                    {fileCount} file dipilih: {uploadedFiles.map((file) => file.name).join(', ')}
+                    {fileCount} file dipilih: {selectedFileLabel}
                   </p>
                 )}
               </FormField>
