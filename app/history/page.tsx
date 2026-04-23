@@ -10,7 +10,8 @@ export default function HistoryPage() {
   const [transactions, setTransactions] = useState<HistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedImages, setSelectedImages] = useState<string[] | null>(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -68,6 +69,29 @@ export default function HistoryPage() {
 
   const isValidImageUrl = (url: string) => {
     return url && url.startsWith('http') && !url.includes('Upload') && !url.includes('Gagal');
+  };
+
+  const getProofUrls = (bukti: string) => {
+    if (!bukti) return [];
+
+    const cleaned = bukti.trim();
+    if (!cleaned) return [];
+
+    if (cleaned.startsWith('[') && cleaned.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(cleaned);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((url): url is string => typeof url === 'string' && isValidImageUrl(url));
+        }
+      } catch {
+        // Fallback to separator parsing
+      }
+    }
+
+    return cleaned
+      .split(/\|\||,|\n/)
+      .map((url) => url.trim())
+      .filter((url) => isValidImageUrl(url));
   };
 
   // Convert Google Drive URL to embeddable preview URL
@@ -163,15 +187,28 @@ export default function HistoryPage() {
                 </div>
 
                 {/* Bukti/Proof Image */}
-                {isValidImageUrl(item.bukti) && (
-                  <button
-                    onClick={() => setSelectedImage(getPreviewUrl(item.bukti))}
-                    className="flex items-center gap-2 text-xs text-primary hover:underline"
-                  >
-                    <ImageIcon className="h-4 w-4" />
-                    Lihat Bukti
-                  </button>
-                )}
+                {(() => {
+                  const proofUrls = getProofUrls(item.bukti);
+                  if (proofUrls.length === 0) return null;
+
+                  return (
+                    <div className="space-y-2">
+                      {proofUrls.map((url, index) => (
+                        <button
+                          key={`${item.id}-proof-${index}`}
+                          onClick={() => {
+                            setSelectedImages(proofUrls.map((proofUrl) => getPreviewUrl(proofUrl)));
+                            setSelectedImageIndex(index);
+                          }}
+                          className="flex items-center gap-2 text-xs text-primary hover:underline"
+                        >
+                          <ImageIcon className="h-4 w-4" />
+                          Lihat Bukti {proofUrls.length > 1 ? index + 1 : ''}
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })()}
 
                 {/* Footer */}
                 <div className="flex items-center justify-between pt-2 border-t text-xs text-muted-foreground">
@@ -209,25 +246,53 @@ export default function HistoryPage() {
       </div>
 
       {/* Image Modal - using iframe for Google Drive */}
-      {selectedImage && (
+      {selectedImages && selectedImages[selectedImageIndex] && (
         <div
           className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4"
-          onClick={() => setSelectedImage(null)}
+          onClick={() => setSelectedImages(null)}
         >
           <button
-            onClick={() => setSelectedImage(null)}
+            onClick={() => setSelectedImages(null)}
             className="absolute top-4 right-4 text-white p-2 hover:bg-white/20 rounded-full z-10"
           >
             <X className="h-6 w-6" />
           </button>
           <iframe
-            src={selectedImage}
+            src={selectedImages[selectedImageIndex]}
             className="w-full max-w-3xl h-[80vh] rounded-lg bg-white"
             onClick={(e) => e.stopPropagation()}
             allow="autoplay"
           />
+          {selectedImages.length > 1 && (
+            <div
+              className="mt-3 flex items-center gap-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={selectedImageIndex === 0}
+                onClick={() => setSelectedImageIndex((prev) => Math.max(0, prev - 1))}
+              >
+                Sebelumnya
+              </Button>
+              <span className="text-white text-sm">
+                {selectedImageIndex + 1} / {selectedImages.length}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={selectedImageIndex === selectedImages.length - 1}
+                onClick={() => setSelectedImageIndex((prev) => Math.min(selectedImages.length - 1, prev + 1))}
+              >
+                Berikutnya
+              </Button>
+            </div>
+          )}
           <a
-            href={selectedImage.replace('/preview', '/view')}
+            href={selectedImages[selectedImageIndex].replace('/preview', '/view')}
             target="_blank"
             rel="noopener noreferrer"
             className="mt-3 text-white text-sm hover:underline"

@@ -41,7 +41,7 @@ export function ExpenseForm() {
     errors,
     isSubmitting,
     submitStatus,
-    uploadedFile,
+    uploadedFiles,
     handleChange,
     handleFileChange,
     handleSubmit,
@@ -113,7 +113,7 @@ export function ExpenseForm() {
   }, []);
 
   const hasDropdownErrors = Object.keys(dropdownErrors).length > 0;
-  const fileName = uploadedFile ? uploadedFile.name : '';
+  const fileCount = uploadedFiles.length;
 
   return (
     <div className="w-full bg-background/70 flex flex-col rounded-[2rem] border border-white/60 shadow-[0_25px_80px_-45px_rgba(28,25,23,0.35)] backdrop-blur-sm">
@@ -312,10 +312,11 @@ export function ExpenseForm() {
                 onFileChange={handleFileChange}
                 required={false}
                 accept="image/*"
+                multiple
               >
-                {fileName && (
+                {fileCount > 0 && (
                   <p className="text-xs text-muted-foreground mt-2">
-                    File dipilih: {fileName}
+                    {fileCount} file dipilih: {uploadedFiles.map((file) => file.name).join(', ')}
                   </p>
                 )}
               </FormField>

@@ -8,7 +8,7 @@ Modern Progressive Web App untuk pencatatan pengeluaran proyek konstruksi. Aplik
 - **Offline Support**: Tetap berfungsi saat offline dengan Service Worker
 - **Real-time Validation**: Validasi form yang responsif dan user-friendly
 - **Dropdown Dynamic**: Menu dropdown yang diisi dari API Google Apps Script
-- **File Upload**: Support upload bukti transaksi dalam format image
+- **File Upload**: Support upload satu atau beberapa bukti transaksi dalam format image
 - **Draft Recovery**: Menyimpan draft otomatis saat offline
 - **Add to Home Screen**: PWA dapat dipasang di home screen Android/iOS
 - **Clean & Fast**: Loading <3 detik, Lighthouse PWA score 90+
@@ -59,7 +59,7 @@ src/
 | Deskripsi | Text | Ya | Min 5 karakter |
 | Catatan | Textarea | Tidak | Optional notes |
 | User | Text | Ya | Nama yang input data |
-| Upload Bukti | File | Tidak | Gambar untuk dokumentasi |
+| Upload Bukti | File (multiple) | Tidak | Satu atau beberapa gambar untuk dokumentasi |
 
 ## Google Apps Script API Integration
 
@@ -186,7 +186,7 @@ Semua field memiliki validasi real-time:
 - Error highlighting dengan color coding
 
 ### File Upload
-- Support image files only
+- Support image files only (single/multiple)
 - Automatic compression sebelum upload
 - Fallback jika file upload gagal
 

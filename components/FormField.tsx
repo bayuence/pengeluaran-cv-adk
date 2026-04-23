@@ -18,13 +18,14 @@ interface FormFieldProps {
   value?: string;
   error?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
-  onFileChange?: (file: File | null) => void;
+  onFileChange?: (files: File[]) => void;
   required?: boolean;
   disabled?: boolean;
   options?: { value: string; label: string }[];
   loading?: boolean;
   children?: React.ReactNode;
   accept?: string;
+  multiple?: boolean;
 }
 
 export function FormField({
@@ -43,12 +44,13 @@ export function FormField({
   loading = false,
   children,
   accept,
+  multiple = false,
 }: FormFieldProps) {
   const hasError = !!error;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
-    onFileChange?.(file);
+    const files = Array.from(e.target.files || []);
+    onFileChange?.(files);
   };
 
   return (
@@ -86,6 +88,7 @@ export function FormField({
             onChange={handleFileChange}
             disabled={disabled}
             accept={accept}
+            multiple={multiple}
             className="hidden"
           />
           <label
@@ -95,7 +98,9 @@ export function FormField({
           >
             <div className="text-center py-4 px-3">
               <p className="text-sm font-medium text-foreground">Upload Bukti</p>
-              <p className="text-xs text-muted-foreground mt-1">Tap untuk memilih gambar</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {multiple ? 'Tap untuk memilih satu atau beberapa gambar' : 'Tap untuk memilih gambar'}
+              </p>
             </div>
           </label>
         </div>
