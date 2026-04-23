@@ -70,7 +70,7 @@ export function useExpense() {
   const [form, setForm] = useState<ExpensePayload>(INITIAL_STATE);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [submitStatus, setSubmitStatus] = useState<{
     type: 'success' | 'error' | null;
     message: string;
@@ -167,8 +167,8 @@ export function useExpense() {
    * Handle file upload
    */
   const handleFileChange = useCallback(
-    (file: File | null) => {
-      setUploadedFile(file);
+    (files: File[]) => {
+      setUploadedFiles(files);
       if (errors.bukti) {
         setErrors((prev) => ({ ...prev, bukti: '' }));
       }
@@ -219,8 +219,17 @@ export function useExpense() {
       try {
         // Convert file to base64 if uploaded
         let buktiData = '';
-        if (uploadedFile) {
-          buktiData = await fileToBase64(uploadedFile);
+        if (uploadedFiles.length > 0) {
+          const buktiList = await Promise.all(
+            uploadedFiles.map(async (file) => {
+              try {
+                return await fileToBase64(file);
+              } catch {
+                throw new Error(`Gagal memproses file: ${file.name}`);
+              }
+            })
+          );
+          buktiData = buktiList.join('||');
         }
 
         const payload: ExpensePayload = {
@@ -240,7 +249,7 @@ export function useExpense() {
             message: result.message || 'Transaksi berhasil disimpan ke spreadsheet!',
           });
           setForm(INITIAL_STATE);
-          setUploadedFile(null);
+          setUploadedFiles([]);
 
           // Clear status after 5 seconds
           setTimeout(() => {
@@ -272,14 +281,14 @@ export function useExpense() {
         } else {
           setSubmitStatus({
             type: 'error',
-            message: 'Terjadi kesalahan. Silakan coba lagi.',
+            message: error instanceof Error ? error.message : 'Terjadi kesalahan. Silakan coba lagi.',
           });
         }
       } finally {
         setIsSubmitting(false);
       }
     },
-    [form, validateAll, uploadedFile]
+    [form, uploadedFiles, validateAll]
   );
 
   /**
@@ -287,7 +296,7 @@ export function useExpense() {
    */
   const resetForm = useCallback(() => {
     setForm(INITIAL_STATE);
-    setUploadedFile(null);
+    setUploadedFiles([]);
     setErrors({});
     setSubmitStatus({ type: null, message: '' });
   }, []);
@@ -299,7 +308,7 @@ export function useExpense() {
     setErrors,
     isSubmitting,
     submitStatus,
-    uploadedFile,
+    uploadedFiles,
     handleChange,
     handleFileChange,
     handleSubmit,

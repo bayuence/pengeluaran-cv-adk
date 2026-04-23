@@ -22,7 +22,7 @@ export interface ExpensePayload {
   deskripsi: string;
   catatan: string;
   user_input: string;
-  bukti: string; // base64 or URL
+  bukti: string; // base64/URL tunggal atau gabungan dipisah "||"
 }
 
 export interface HistoryItem {
