@@ -28,6 +28,27 @@ export async function GET(request: Request) {
     const proyek = searchParams.get('proyek');
     const kategori = searchParams.get('kategori');
 
+    // Khusus: ambil semua dropdown dalam 1 request (hemat kuota GAS)
+    if (action === 'getAllOptions') {
+      const gasUrl = new URL(GAS_ENDPOINT);
+      gasUrl.searchParams.append('action', 'getOptions');
+
+      const response = await fetch(gasUrl.toString(), {
+        method: 'GET',
+        redirect: 'follow',
+        signal: AbortSignal.timeout(8000),
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`GAS returned ${response.status}: ${text.substring(0, 100)}`);
+      }
+
+      const raw = await response.json();
+      // raw diharapkan: { master: [...], proyek: [...] }
+      return Response.json({ success: true, data: raw });
+    }
+
     // Build GAS URL
     const gasUrl = new URL(GAS_ENDPOINT);
     if (action) gasUrl.searchParams.append('action', action);

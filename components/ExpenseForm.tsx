@@ -14,7 +14,7 @@ import { StatusMessage } from './StatusMessage';
 import { MultiBuktiUploader } from './MultiBuktiUploader';
 import { Button } from '@/components/ui/button';
 import { useExpense } from '@/lib/useExpense';
-import { fetchDropdownOptions } from '@/lib/api';
+import { fetchAllDropdownOptions } from '@/lib/api';
 import { Loader2, AlertTriangle } from 'lucide-react';
 
 interface DropdownOption {
@@ -68,12 +68,8 @@ export function ExpenseForm() {
       setIsLoadingDropdowns(true);
       setDropdownErrors({});
 
-      const [proyekRes, kategoriRes, metodeRes, picRes] = await Promise.all([
-        fetchDropdownOptions('proyek'),
-        fetchDropdownOptions('Kategori'),
-        fetchDropdownOptions('Metode'),
-        fetchDropdownOptions('PIC'),
-      ]);
+      const { proyek: proyekRes, kategori: kategoriRes, metode: metodeRes, pic: picRes } =
+        await fetchAllDropdownOptions();
 
       const newDropdowns: DropdownData = {
         proyek: [],

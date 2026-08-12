@@ -147,6 +147,69 @@ export async function fetchDropdownOptions(
 }
 
 /**
+ * Fetch SEMUA dropdown options dalam 1 request ke proxy (lebih efisien)
+ * Mengembalikan proyek, kategori, metode, dan pic sekaligus
+ */
+export async function fetchAllDropdownOptions(): Promise<{
+  proyek: ApiResponse<string[]>;
+  kategori: ApiResponse<string[]>;
+  metode: ApiResponse<string[]>;
+  pic: ApiResponse<string[]>;
+}> {
+  const empty = (error: string): ApiResponse<string[]> => ({ success: false, error });
+
+  if (!API_ENDPOINT) {
+    const err = 'API endpoint belum dikonfigurasi. Silakan set NEXT_PUBLIC_GAS_API_ENDPOINT di file .env';
+    return { proyek: empty(err), kategori: empty(err), metode: empty(err), pic: empty(err) };
+  }
+
+  try {
+    const response = await retryFetch(`${API_ENDPOINT}?action=getAllOptions`, { method: 'GET' });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    const raw = result.data; // { master: [...], proyek: [...] }
+
+    const parseProyek = (): ApiResponse<string[]> => {
+      if (!raw?.proyek) return empty('Data proyek tidak tersedia');
+      const opts = raw.proyek
+        .filter((p: any) => p.status !== 'Nonaktif')
+        .map((p: any) => p.nama_proyek)
+        .filter(Boolean);
+      return { success: true, data: opts };
+    };
+
+    const parseMaster = (tipe: string): ApiResponse<string[]> => {
+      if (!raw?.master) return empty(`Data ${tipe} tidak tersedia`);
+      const opts = raw.master
+        .filter((m: any) => m.tipe && m.tipe.toLowerCase() === tipe.toLowerCase())
+        .map((m: any) => m.nama)
+        .filter(Boolean);
+      return { success: true, data: opts };
+    };
+
+    return {
+      proyek: parseProyek(),
+      kategori: parseMaster('kategori'),
+      metode: parseMaster('metode'),
+      pic: parseMaster('pic'),
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Gagal mengambil data dari spreadsheet';
+    console.error('[API] fetchAllDropdownOptions gagal:', message);
+    return {
+      proyek: empty(message),
+      kategori: empty(message),
+      metode: empty(message),
+      pic: empty(message),
+    };
+  }
+}
+
+/**
  * Submit expense data ke Google Apps Script → Google Sheets
  * Tidak ada fallback ke localStorage untuk data submission
  */
