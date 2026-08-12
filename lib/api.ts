@@ -9,6 +9,7 @@ interface ApiResponse<T> {
   data?: T;
   error?: string;
   message?: string;
+  maybeSubmitted?: boolean; // true jika timeout — data mungkin sudah tersimpan di GAS
 }
 
 export interface ExpensePayload {
@@ -273,11 +274,18 @@ export async function submitExpenseData(
       message: 'Transaksi berhasil disimpan ke spreadsheet',
     };
   } catch (error) {
+    const isTimeout =
+      error instanceof Error &&
+      (error.name === 'AbortError' || error.name === 'TimeoutError' || error.message.includes('timeout'));
     const message = error instanceof Error ? error.message : 'Gagal menyimpan transaksi';
     console.error('[API] submitExpenseData gagal:', message);
     return {
       success: false,
-      error: message,
+      // Jika timeout, data mungkin sudah masuk ke GAS tapi respons terlambat
+      maybeSubmitted: isTimeout,
+      error: isTimeout
+        ? 'Koneksi ke server habis waktu. Data Anda kemungkinan sudah tersimpan — silakan cek Riwayat Transaksi untuk memastikan.'
+        : message,
     };
   }
 }
