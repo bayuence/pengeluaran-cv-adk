@@ -240,7 +240,9 @@ export async function submitExpenseData(
   }
 
   try {
-    const response = await retryFetch(`${API_ENDPOINT}?action=submit`, {
+    // PENTING: gunakan fetch biasa (BUKAN retryFetch) untuk submit
+    // POST tidak idempotent — retry menyebabkan data duplikat di spreadsheet
+    const response = await fetch(`${API_ENDPOINT}?action=submit`, {
       method: 'POST',
       // Menggunakan text/plain agar browser menganggap ini "simple request" dan tidak mengirim CORS preflight (OPTIONS)
       headers: {
@@ -251,6 +253,8 @@ export async function submitExpenseData(
         ...payload,
         timestamp: new Date().toISOString(),
       }),
+      redirect: 'follow',
+      signal: AbortSignal.timeout(9000),
     });
 
     if (!response.ok) {
