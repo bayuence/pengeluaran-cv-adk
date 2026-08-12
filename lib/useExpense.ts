@@ -300,15 +300,6 @@ export function useExpense() {
           setTimeout(() => {
             setSubmitStatus({ type: null, message: '' });
           }, 5000);
-        } else if (result.maybeSubmitted) {
-          // Timeout — data mungkin sudah masuk, reset form agar tidak kirim ulang
-          setSubmitStatus({
-            type: 'warning',
-            message: result.error || 'Koneksi habis waktu. Data Anda kemungkinan sudah tersimpan — silakan cek Riwayat Transaksi untuk memastikan.',
-          });
-          setForm(INITIAL_STATE);
-          setUploadedFiles([]);
-          setFilePreviews([]);
         } else {
           // Jika offline, simpan sebagai draft
           if (!navigator.onLine) {

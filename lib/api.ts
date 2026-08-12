@@ -277,15 +277,73 @@ export async function submitExpenseData(
     const isTimeout =
       error instanceof Error &&
       (error.name === 'AbortError' || error.name === 'TimeoutError' || error.message.includes('timeout'));
+
+    if (isTimeout) {
+      // Koneksi timeout — GAS mungkin sudah menyimpan data tapi respons terlambat.
+      // Tunggu 4 detik lalu verifikasi otomatis dengan query history terbaru.
+      console.warn('[API] Submit timeout — memulai auto-verifikasi...');
+      await new Promise((resolve) => setTimeout(resolve, 4000));
+
+      try {
+        const verifyRes = await fetch(`${API_ENDPOINT}?action=getHistory&limit=5`, {
+          method: 'GET',
+          redirect: 'follow',
+          signal: AbortSignal.timeout(8000),
+        });
+
+        if (verifyRes.ok) {
+          const verifyData = await verifyRes.json();
+          const items: Array<Record<string, unknown>> = verifyData?.data ?? [];
+
+          // Cocokkan data yang baru dikirim dengan history terbaru
+          const nominalNum = parseFloat(payload.nominal.replace(/,/g, ''));
+          const submittedDate = payload.tanggal; // format: YYYY-MM-DD
+
+          const match = items.find((item) => {
+            const itemNominal = typeof item.nominal === 'number' ? item.nominal : parseFloat(String(item.nominal));
+            const itemTanggal = String(item.tanggal ?? '').substring(0, 10);
+            return (
+              itemTanggal === submittedDate &&
+              itemNominal === nominalNum &&
+              String(item.proyek ?? '') === payload.proyek &&
+              String(item.deskripsi ?? '') === payload.deskripsi
+            );
+          });
+
+          if (match) {
+            console.log('[API] Auto-verifikasi: data DITEMUKAN di spreadsheet ✓');
+            return {
+              success: true,
+              data: {
+                id: String(match.id ?? `expense-${Date.now()}`),
+                timestamp: String(match.timestamp ?? new Date().toISOString()),
+              },
+              message: 'Transaksi berhasil disimpan ke spreadsheet',
+            };
+          } else {
+            console.warn('[API] Auto-verifikasi: data TIDAK ditemukan di spreadsheet ✗');
+            return {
+              success: false,
+              error: 'Koneksi lambat dan data tidak terverifikasi tersimpan. Silakan coba kirim ulang.',
+            };
+          }
+        }
+      } catch (verifyError) {
+        console.error('[API] Auto-verifikasi gagal:', verifyError);
+      }
+
+      // Verifikasi sendiri gagal (GAS tidak bisa diakses sama sekali)
+      return {
+        success: false,
+        error: 'Koneksi ke server bermasalah. Silakan periksa koneksi internet Anda dan coba lagi.',
+      };
+    }
+
     const message = error instanceof Error ? error.message : 'Gagal menyimpan transaksi';
     console.error('[API] submitExpenseData gagal:', message);
     return {
       success: false,
-      // Jika timeout, data mungkin sudah masuk ke GAS tapi respons terlambat
-      maybeSubmitted: isTimeout,
-      error: isTimeout
-        ? 'Koneksi ke server habis waktu. Data Anda kemungkinan sudah tersimpan — silakan cek Riwayat Transaksi untuk memastikan.'
-        : message,
+      error: message,
     };
   }
 }
