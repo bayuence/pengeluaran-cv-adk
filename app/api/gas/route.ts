@@ -3,6 +3,9 @@
  * Bypass CORS dengan route server-side
  */
 
+// Batas maksimum eksekusi fungsi di Vercel (detik)
+export const maxDuration = 10;
+
 export async function GET(request: Request) {
   try {
     const GAS_ENDPOINT = process.env.NEXT_PUBLIC_GAS_API_ENDPOINT;
@@ -39,7 +42,7 @@ export async function GET(request: Request) {
     const response = await fetch(gasUrl.toString(), {
       method: 'GET',
       redirect: 'follow',
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(8000), // 8s: aman di bawah limit Vercel 10s
     });
 
     if (!response.ok) {
@@ -84,7 +87,7 @@ export async function POST(request: Request) {
         timestamp: new Date().toISOString(),
       }),
       redirect: 'follow',
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(8000), // 8s: aman di bawah limit Vercel 10s
     });
 
     if (!response.ok) {

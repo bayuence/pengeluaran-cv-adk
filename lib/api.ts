@@ -58,7 +58,7 @@ async function retryFetch(
     const response = await fetch(url, {
       ...options,
       redirect: 'follow', // Important for Google Apps Script redirects
-      signal: AbortSignal.timeout(15000), // 15s timeout
+      signal: AbortSignal.timeout(9000), // 9s timeout (server proxy timeout = 8s)
     });
 
     if (!response.ok && retries > 0 && response.status >= 500) {
